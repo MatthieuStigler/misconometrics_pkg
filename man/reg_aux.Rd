@@ -2,16 +2,36 @@
 % Please edit documentation in R/reg_aux.R
 \name{reg_aux}
 \alias{reg_aux}
+\alias{reg_aux.default}
+\alias{reg_aux.lm}
+\alias{reg_aux.felm}
+\alias{vcov.reg_aux_lm}
 \title{Auxiliary regression of all covariates on one (or more) variable of interest}
 \usage{
-reg_aux(...)
+reg_aux(object, ...)
+
+\method{reg_aux}{default}(object, var_main, var_controls = NULL, ...)
+
+\method{reg_aux}{lm}(object, var_main, var_controls = NULL,
+  method = c("update", "update_lmfit", "sweep"), add_vcov = FALSE, ...)
+
+\method{reg_aux}{felm}(object, var_main, var_controls = NULL,
+  method = c("update", "sweep"), add_vcov = FALSE, ...)
+
+\method{vcov}{reg_aux_lm}(object, ...)
 }
 \arguments{
 \item{object}{output from regression}
 
+\item{...}{unused}
+
 \item{var_main}{a character, name of the variable of interest}
 
 \item{var_controls}{a character, name of the covariates}
+
+\item{method}{whether to use the standard update() funciton, or a faster sweep one}
+
+\item{add_vcov}{for method with sweep, wether to compute also the vcov}
 }
 \value{
 An object of the same type
@@ -25,6 +45,17 @@ or via the \code{\link{Summary}} group generic. For this to work properly,
 the arguments \code{...} should be unnamed, and dispatch is on the
 first argument.
 }
+\section{Methods (by class)}{
+\itemize{
+\item \code{default}: Default method
+
+\item \code{lm}: Method for `felm` object
+
+\item \code{felm}: Method for `felm` object
+
+\item \code{reg_aux_lm}: Vcov method for some of the reg_aux output
+}}
+
 \examples{
   model_lm <- lm(y ~ lag.quarterly.revenue + price.index + income.level + market.potential, data=freeny)
   res_lm <- reg_aux(object=model_lm, var_main = "lag.quarterly.revenue")

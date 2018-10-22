@@ -10,6 +10,9 @@
 #' @param object output from regression
 #' @param var_main a character, name of the variable of interest
 #' @param var_controls a character, name of the covariates
+#' @param method whether to use the standard update() funciton, or a faster sweep one
+#' @param add_vcov for method with sweep, wether to compute also the vcov
+#' @param ... unused
 #' @return An object of the same type
 #' @export
 #' @examples
@@ -19,11 +22,13 @@
 
 
 
-reg_aux <- function(...)
+reg_aux <- function(object, ...)
   UseMethod("reg_aux")
 
 #' @export
-reg_aux.default <- function(object, var_main, var_controls = NULL) {
+#' @describeIn reg_aux Default method
+#' @importFrom stats update terms
+reg_aux.default <- function(object, var_main, var_controls = NULL, ...) {
 
   if(is.null(var_controls)) {
     var_all  <- attr(terms(object), "term.labels")
@@ -37,8 +42,11 @@ reg_aux.default <- function(object, var_main, var_controls = NULL) {
 }
 
 #' @export
+#' @describeIn reg_aux Method for `felm` object
+#' @importFrom stats as.formula lm.fit model.matrix
+#' @importFrom ISR3 RSWP
 reg_aux.lm <- function(object, var_main, var_controls = NULL, method = c("update", "update_lmfit",  "sweep"),
-                       add_vcov = FALSE) {
+                       add_vcov = FALSE, ...) {
 
   method <-  match.arg(method)
 
@@ -49,7 +57,7 @@ reg_aux.lm <- function(object, var_main, var_controls = NULL, method = c("update
 
   if(method == "update") {
     string_formula <- sprintf("cbind(%s) ~ %s", toString(var_controls), paste(var_main, collapse=" + "))
-    res <- update(object, as.formula(string_formula))
+    res <- stats::update(object, as.formula(string_formula))
     old_class <- class(res)
     class(res) <-  c("reg_aux_lm", "reg_aux", old_class)
   } else  if(method=="update_lmfit") {
@@ -57,7 +65,7 @@ reg_aux.lm <- function(object, var_main, var_controls = NULL, method = c("update
     X <-  MM[, c("(Intercept)", var_main)]
     Y <- MM[, var_controls]
 
-    res <- lm.fit(X, Y)
+    res <- stats::lm.fit(X, Y)
     class(res) <-  c("reg_aux_lm", "reg_aux")
 
     if(add_vcov) {
@@ -80,7 +88,7 @@ reg_aux.lm <- function(object, var_main, var_controls = NULL, method = c("update
     XX <-  crossprod(qr.R(object$qr))
     which_main <- which(var_main == colnames(XX))
     var_regs <- c(1, which_main)
-    sweep_lm <- SWP(XX, var_regs)
+    sweep_lm <- ISR3::SWP(XX, var_regs)
     coef <-  sweep_lm[var_regs, - var_regs]
     res <-  list(coefficients = coef)
     if(add_vcov) {
@@ -103,8 +111,9 @@ reg_aux.lm <- function(object, var_main, var_controls = NULL, method = c("update
 
 
 #' @export
+#' @describeIn reg_aux Method for `felm` object
 reg_aux.felm <-  function(object, var_main, var_controls = NULL, method = c("update", "sweep"),
-                          add_vcov = FALSE) {
+                          add_vcov = FALSE, ...) {
 
   method <-  match.arg(method)
 
@@ -125,7 +134,7 @@ reg_aux.felm <-  function(object, var_main, var_controls = NULL, method = c("upd
     which_main <- which(var_main == colnames(vc_raw))
     which_controls <- which(colnames(vc_raw) %in% var_controls)
 
-    sweep_lm <- RSWP(vc_raw, which_controls)
+    sweep_lm <- ISR3::RSWP(vc_raw, which_controls)
     coef <-  sweep_lm[which_main, which_controls]
     res <-  list(coefficients = coef)
     if(add_vcov) {
@@ -146,6 +155,8 @@ reg_aux.felm <-  function(object, var_main, var_controls = NULL, method = c("upd
   res
 }
 
+#' @export
+#' @importMethodsFrom stats summary.mlm
 summary.reg_aux_lm <- function(object, ...) {
 
 
@@ -159,7 +170,7 @@ summary.reg_aux_lm <- function(object, ...) {
     object$coefficients <- cbind(Estimate = est,
                                  `Std. Error` = se,
                                  `t value` = tval,
-                                 `Pr(>|t|)` = 2 * pt(abs(tval), rdf, lower.tail = FALSE))
+                                 `Pr(>|t|)` = 2 * stats::pt(abs(tval), rdf, lower.tail = FALSE))
     return(object)
   } else {
     return(stats:::summary.mlm(object))
@@ -168,6 +179,9 @@ summary.reg_aux_lm <- function(object, ...) {
 
 }
 
+#' @export
+#' @describeIn reg_aux Vcov method for some of the reg_aux output
+#' @importFrom stats vcov
 vcov.reg_aux_lm <- function(object, ...) {
 
 
