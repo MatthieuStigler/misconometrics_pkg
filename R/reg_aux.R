@@ -16,7 +16,8 @@
 #' @return An object of the same type
 #' @export
 #' @examples
-#'   model_lm <- lm(y ~ lag.quarterly.revenue + price.index + income.level + market.potential, data=freeny)
+#'   model_lm <- lm(y ~ lag.quarterly.revenue + price.index + income.level + market.potential,
+#'                  data=freeny)
 #'   res_lm <- reg_aux(object=model_lm, var_main = "lag.quarterly.revenue")
 
 
@@ -49,6 +50,10 @@ reg_aux.lm <- function(object, var_main, var_controls = NULL, method = c("update
                        add_vcov = FALSE, ...) {
 
   method <-  match.arg(method)
+  if(method == "sweep" & !requireNamespace("ISR3", quietly = TRUE)) {
+    stop("Package 'ISR3' needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
 
   if(is.null(var_controls)) {
     var_all <- attr(terms(object), "term.labels")
@@ -84,7 +89,6 @@ reg_aux.lm <- function(object, var_main, var_controls = NULL, method = c("update
 
   } else {
 
-    require(ISR3)
     XX <-  crossprod(qr.R(object$qr))
     which_main <- which(var_main == colnames(XX))
     var_regs <- c(1, which_main)
@@ -116,6 +120,10 @@ reg_aux.felm <-  function(object, var_main, var_controls = NULL, method = c("upd
                           add_vcov = FALSE, ...) {
 
   method <-  match.arg(method)
+  if(method == "sweep" & !requireNamespace("ISR3", quietly = TRUE)) {
+    stop("Package 'ISR3' needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
 
   if(is.null(var_controls)) {
     var_all <- attr(terms(object), "term.labels")
@@ -127,8 +135,6 @@ reg_aux.felm <-  function(object, var_main, var_controls = NULL, method = c("upd
     res <- update(object, as.formula(string_formula))
     old_class <- class(res)
     class(res) <-  c("reg_aux", old_class)
-  } else  if(method=="sweep") {
-    require(ISR3)
     vc_get_raw <-  function(x, type="iid") vcov(x, type = type) / summary(x)$rse^2
     vc_raw <- vc_get_raw(object)
     which_main <- which(var_main == colnames(vc_raw))
@@ -173,7 +179,7 @@ summary.reg_aux_lm <- function(object, ...) {
                                  `Pr(>|t|)` = 2 * stats::pt(abs(tval), rdf, lower.tail = FALSE))
     return(object)
   } else {
-    return(stats:::summary.mlm(object))
+    return(summary(object))
   }
 
 
