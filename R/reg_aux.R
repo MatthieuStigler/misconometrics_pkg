@@ -57,7 +57,7 @@ reg_aux.lm <- function(object, var_main, var_controls = NULL, method = c("update
 
   if(is.null(var_controls)) {
     var_all <- attr(terms(object), "term.labels")
-    var_controls <-  var_all[var_all!= var_main]
+    var_controls <-  var_all[!var_all %in% var_main]
   }
 
   if(method == "update") {
@@ -90,14 +90,14 @@ reg_aux.lm <- function(object, var_main, var_controls = NULL, method = c("update
   } else {
 
     XX <-  crossprod(qr.R(object$qr))
-    which_main <- which(var_main == colnames(XX))
+    which_main <- which(colnames(XX) %in% var_main)
     var_regs <- c(1, which_main)
     sweep_lm <- ISR3::SWP(XX, var_regs)
     coef <-  sweep_lm[var_regs, - var_regs]
     res <-  list(coefficients = coef)
     if(add_vcov) {
       N <- object$df.residual + object$rank
-      df.residual <- N - 2
+      df.residual <- N - length(var_regs)
       S <- sweep_lm[-var_regs, -var_regs]
       VC <-  (-S/df.residual) %x% sweep_lm[var_regs, var_regs]
       VC_names <-  paste(rep(var_controls, each = length(var_main)+1),
@@ -127,7 +127,7 @@ reg_aux.felm <-  function(object, var_main, var_controls = NULL, method = c("upd
 
   if(is.null(var_controls)) {
     var_all <- attr(terms(object), "term.labels")
-    var_controls <-  var_all[var_all!= var_main]
+    var_controls <-  var_all[! var_all %in%  var_main]
   }
 
   if(method == "update") {
