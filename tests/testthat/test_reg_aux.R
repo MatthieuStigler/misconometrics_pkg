@@ -7,9 +7,17 @@ model_full_1 <- lm(y ~ lag.quarterly.revenue + price.index + income.level + mark
 res_lm_gen <- reg_aux.default(object=model_full_1, var_main = "lag.quarterly.revenue")
 res_lm <- reg_aux(object=model_full_1, var_main = "lag.quarterly.revenue")
 res_lmf <- reg_aux(object=model_full_1, var_main = "lag.quarterly.revenue", method = "update_lmfit", add_vcov = TRUE)
-res_sweep <- reg_aux.lm(model_full_1, var_main = "lag.quarterly.revenue", method = "sweep", add_vcov = TRUE)
+res_sweep <- reg_aux(model_full_1, var_main = "lag.quarterly.revenue", method = "sweep", add_vcov = TRUE)
 
 
+## 2 main
+res2_lm_gen <- reg_aux.default(object=model_full_1, var_main = c("lag.quarterly.revenue", "income.level"))
+res2_lm <- reg_aux(object=model_full_1, var_main = c("lag.quarterly.revenue", "income.level"))
+res2_lmf <- reg_aux(object=model_full_1, var_main = c("lag.quarterly.revenue", "income.level"), method = "update_lmfit", add_vcov = TRUE)
+res2_sweep <- reg_aux(model_full_1, var_main = c("lag.quarterly.revenue", "income.level"), method = "sweep", add_vcov = TRUE)
+
+
+##
 res_li <-  list(res_lm= res_lm,
                 res_lmf = res_lmf,
                 res_sweep = res_sweep)
@@ -21,11 +29,23 @@ test_that("reg_aux lm: same coefs", {
   expect_equal(coef(res_lmf), coef(res_sweep))
   expect_equal(coef(res_lm), coef(res_sweep))
   expect_equal(coef(summary(res_lmf)), coef(summary(res_sweep)))
+
+})
+
+test_that("reg_aux lm: same coefs, 2 main vars", {
+  expect_equal(coef(res2_lmf), sapply(res2_lm_gen, coef))
+  expect_equal(coef(res2_lmf), coef(res2_lm))
+  expect_equal(coef(res2_lm), coef(res2_sweep))
+  expect_equal(coef(summary(res2_lmf)), coef(summary(res2_sweep)))
+
 })
 
 test_that("reg_aux lm: vcov", {
   expect_equal(vcov(res_lmf), vcov(res_sweep))
   expect_equal(vcov(res_lm), vcov(res_sweep))
+
+  expect_equal(vcov(res2_lmf), vcov(res2_sweep))
+  expect_equal(vcov(res2_lm), vcov(res2_sweep))
 })
 
 ## felm
