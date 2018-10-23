@@ -4,7 +4,7 @@ Title: Various functions used in ecoonmetrics:  covariate decomposition, auxilia
 Version: 0.1.0
 Author: Matthieu Stigler
 Maintainer: Matthieu Stigler <Matthieu.Stigler@gmail.com>
-Description: Various functions used in ecoonmetrics:  covariate decomposition, auxiliary regression
+Description: Various functions used in ecoonmetrics:  covariate decomposition, auxiliary regression.
 License: GPL (>= 2)
 Imports: ISR3
 Suggests: lfe, testthat
