@@ -67,10 +67,9 @@ firm.eff <- rnorm(nlevels(firm))
 
 
 y <- x + 0.5*x2 + 0.2 * x3 -0.3 * x4 + id.eff[id] + firm.eff[firm] + rnorm(length(x))
-
 model_felm <- felm(y ~ x + x2 + x3 + x4 |id + firm)
 
-
+## 1 main var
 res_felm_def <- misconometrics:::reg_aux.default(object=model_felm, var_main = "x")
 res_felm_upd <- reg_aux(object=model_felm, var_main = "x")
 res_felm_swp <- reg_aux(object=model_felm, var_main = "x", method = "sweep", add_vcov = TRUE)
@@ -83,51 +82,34 @@ res2_felm_swp <- reg_aux(object=model_felm, var_main = c("x", "x2"), method = "s
 
 test_that("reg_aux felm: same coefs", {
   expect_equal(map_dbl(res_felm_def, ~coef(.)), coef(res_felm_upd)[1,])
+  expect_equal(map_df(res2_felm_def, ~coef(.)), coef(res2_felm_upd))
   expect_equal(coef(res_felm_upd)[1,], coef(res_felm_swp))
-})
-
-test_that("reg_aux felm: same coefs, 2 main vars", {
-  expect_equal(map_df(res2_felm_def, ~coef(.)) %>%  as.matrix, coef(res2_felm_upd), check.attributes = FALSE)
   expect_equal(coef(res2_felm_upd), coef(res2_felm_swp))
 })
 
 
-## current problems
-# sds are not the same!! issue with degrees of freedom probably?
+test_that("reg_aux felm: same summary/se", {
+  expect_equal(map_dfr(list("x2", "x3", "x4"), ~coef(summary(res_felm_upd, lhs = .)) %>%  as.data.frame),
+               map_df(res_felm_def, ~summary(.) %>%  coef() %>%  as.data.frame))
+  expect_equal(coef(misconometrics:::summary.reg_aux_lm(res_felm_swp)) %>%  as.data.frame,
+               map_df(res_felm_def, ~summary(.) %>%  coef() %>%  as.data.frame), check.attributes = FALSE)
+  expect_equal(map_dfr(list("x3", "x4"), ~coef(summary(res2_felm_upd, lhs = .)) %>%  as.data.frame),
+               map_df(res2_felm_def, ~summary(.) %>%  coef() %>%  as.data.frame))
+  expect_equal(coef(misconometrics:::summary.reg_aux_lm(res2_felm_swp)) %>%  as.data.frame,
+               map_df(res2_felm_def, ~summary(.) %>%  coef() %>%  as.data.frame), check.attributes = FALSE)
 
-test_that("reg_aux felm: same vcov", {
-  # expect_equal(map_dbl(res_felm_def, ~coef(.)), coef(res_felm_upd))
-  # expect_equal(vcov(res_felm_upd, lhs = "x2"), res_felm_swp$vcov[1, 1], check.attributes = FALSE)
 })
 
 
-map_dfr(list("x2", "x3", "x4"), ~coef(summary(res_felm_upd, lhs = .)) %>%  as.data.frame)
-coef(summary(res_felm_swp))
-coef(summary.reg_aux_lm(res_felm_swp))
+test_that("reg_aux felm: same vcov", {
+  expect_equal(vcov(res_felm_upd, lhs = "x2"), res_felm_swp$vcov[1, 1], check.attributes = FALSE)
+  expect_equal(vcov(res_felm_upd, lhs = "x3"), res_felm_swp$vcov[2, 2], check.attributes = FALSE)
+
+  expect_equal(vcov(res2_felm_upd, lhs = "x3"), res2_felm_swp$vcov[1:2, 1:2], check.attributes = FALSE)
+  expect_equal(vcov(res2_felm_upd, lhs = "x4"), res2_felm_swp$vcov[3:4, 3:4], check.attributes = FALSE)
+})
 
 
 # res_felm_upd_clust <- reg_aux.felm(object=model_felm_clust, var_main = "pcap")
 # res_felm_swp_clust <- reg_aux.felm(object=model_felm_clust, var_main = "pcap", method = "sweep", add_vcov = TRUE)
 
-
-
-
-
-# test_that("reg_aux felm: same coefs", {
-#   expect_output(all.equal(map_dfr(list("x2", "x3", "x4"), ~coef(summary(res_felm_upd, lhs = .)) %>%  as.data.frame),
-#                  coef(summary.reg_aux_lm(res_felm_swp)) %>%  as.data.frame),
-#                  # check.attributes = FALSE
-#                  "Error: map_dfr(...) not equal to coef(summary.reg_aux_lm(res_felm_swp)) %>% as.data.frame.
-#                  Component “Std. Error”: Mean relative difference: 0.002074691
-#                  Component “t value”: Mean relative difference: 0.002070396
-#                  Component “Pr(>|t|)”: Mean relative difference: 0.001608762")
-# })
-#
-# ## compare
-# all.equal(coef(res_lm)[2,], coef(res_sweep))
-# all.equal(vcov(res_lm), res_sweep$vcov, check.attributes = FALSE)
-#
-#
-# coef(summary(object = res_lm))
-# coef(summary(object = res_sweep))
-#

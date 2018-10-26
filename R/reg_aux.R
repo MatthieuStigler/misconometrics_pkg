@@ -146,8 +146,7 @@ reg_aux.felm <-  function(object, var_main, var_controls = NULL, method = c("upd
     coef <-  sweep_lm[which_main, which_controls]
     res <-  list(coefficients = coef)
     if(add_vcov) {
-      # N <- object$df.residual + object$rank
-      df.residual <- object$df.residual - length(which_main)
+      df.residual <- object$df.residual + length(var_controls)
       S <- sweep_lm[-which_main, -which_main, drop = FALSE]
       VC <-  (-S/df.residual) %x% sweep_lm[which_main, which_main, drop = FALSE]
       VC_names <-  paste(rep(var_controls, each = length(var_main)),
