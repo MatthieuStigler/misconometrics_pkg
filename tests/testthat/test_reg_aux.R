@@ -4,14 +4,14 @@ library(misconometrics)
 ## Fit models
 model_full_1 <- lm(y ~ lag.quarterly.revenue + price.index + income.level + market.potential, data=freeny)
 
-res_lm_gen <- reg_aux.default(object=model_full_1, var_main = "lag.quarterly.revenue")
+res_lm_gen <- misconometrics:::reg_aux.default(object=model_full_1, var_main = "lag.quarterly.revenue")
 res_lm <- reg_aux(object=model_full_1, var_main = "lag.quarterly.revenue")
 res_lmf <- reg_aux(object=model_full_1, var_main = "lag.quarterly.revenue", method = "update_lmfit", add_vcov = TRUE)
 res_sweep <- reg_aux(model_full_1, var_main = "lag.quarterly.revenue", method = "sweep", add_vcov = TRUE)
 
 
 ## 2 main
-res2_lm_gen <- reg_aux.default(object=model_full_1, var_main = c("lag.quarterly.revenue", "income.level"))
+res2_lm_gen <- misconometrics:::reg_aux.default(object=model_full_1, var_main = c("lag.quarterly.revenue", "income.level"))
 res2_lm <- reg_aux(object=model_full_1, var_main = c("lag.quarterly.revenue", "income.level"))
 res2_lmf <- reg_aux(object=model_full_1, var_main = c("lag.quarterly.revenue", "income.level"), method = "update_lmfit", add_vcov = TRUE)
 res2_sweep <- reg_aux(model_full_1, var_main = c("lag.quarterly.revenue", "income.level"), method = "sweep", add_vcov = TRUE)
@@ -71,15 +71,45 @@ y <- x + 0.5*x2 + 0.2 * x3 -0.3 * x4 + id.eff[id] + firm.eff[firm] + rnorm(lengt
 model_felm <- felm(y ~ x + x2 + x3 + x4 |id + firm)
 
 
+res_felm_def <- misconometrics:::reg_aux.default(object=model_felm, var_main = "x")
 res_felm_upd <- reg_aux(object=model_felm, var_main = "x")
 res_felm_swp <- reg_aux(object=model_felm, var_main = "x", method = "sweep", add_vcov = TRUE)
+
+## 2 main vars
+res2_felm_def <- misconometrics:::reg_aux.default(object=model_felm, var_main = c("x", "x2"))
+res2_felm_upd <- reg_aux(object=model_felm, var_main = c("x", "x2"))
+res2_felm_swp <- reg_aux(object=model_felm, var_main = c("x", "x2"), method = "sweep", add_vcov = TRUE)
+
+
+test_that("reg_aux felm: same coefs", {
+  expect_equal(map_dbl(res_felm_def, ~coef(.)), coef(res_felm_upd)[1,])
+  expect_equal(coef(res_felm_upd)[1,], coef(res_felm_swp))
+})
+
+test_that("reg_aux felm: same coefs, 2 main vars", {
+  expect_equal(map_df(res2_felm_def, ~coef(.)) %>%  as.matrix, coef(res2_felm_upd), check.attributes = FALSE)
+  expect_equal(coef(res2_felm_upd), coef(res2_felm_swp))
+})
+
+
+## current problems
+# sds are not the same!! issue with degrees of freedom probably?
+
+test_that("reg_aux felm: same vcov", {
+  # expect_equal(map_dbl(res_felm_def, ~coef(.)), coef(res_felm_upd))
+  # expect_equal(vcov(res_felm_upd, lhs = "x2"), res_felm_swp$vcov[1, 1], check.attributes = FALSE)
+})
+
+
+map_dfr(list("x2", "x3", "x4"), ~coef(summary(res_felm_upd, lhs = .)) %>%  as.data.frame)
+coef(summary(res_felm_swp))
+coef(summary.reg_aux_lm(res_felm_swp))
+
 
 # res_felm_upd_clust <- reg_aux.felm(object=model_felm_clust, var_main = "pcap")
 # res_felm_swp_clust <- reg_aux.felm(object=model_felm_clust, var_main = "pcap", method = "sweep", add_vcov = TRUE)
 
 
-map_dfr(list("x2", "x3", "x4"), ~coef(summary(res_felm_upd, lhs = .)) %>%  as.data.frame)
-coef(summary.reg_aux_lm(res_felm_swp))
 
 
 

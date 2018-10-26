@@ -135,9 +135,11 @@ reg_aux.felm <-  function(object, var_main, var_controls = NULL, method = c("upd
     res <- update(object, as.formula(string_formula))
     old_class <- class(res)
     class(res) <-  c("reg_aux", old_class)
+
+    } else if(method == "sweep") {
     vc_get_raw <-  function(x, type="iid") vcov(x, type = type) / summary(x)$rse^2
     vc_raw <- vc_get_raw(object)
-    which_main <- which(var_main == colnames(vc_raw))
+    which_main <- which(colnames(vc_raw) %in% var_main)
     which_controls <- which(colnames(vc_raw) %in% var_controls)
 
     sweep_lm <- ISR3::RSWP(vc_raw, which_controls)
@@ -145,7 +147,7 @@ reg_aux.felm <-  function(object, var_main, var_controls = NULL, method = c("upd
     res <-  list(coefficients = coef)
     if(add_vcov) {
       # N <- object$df.residual + object$rank
-      df.residual <- object$df.residual - 1
+      df.residual <- object$df.residual - length(which_main)
       S <- sweep_lm[-which_main, -which_main, drop = FALSE]
       VC <-  (-S/df.residual) %x% sweep_lm[which_main, which_main, drop = FALSE]
       VC_names <-  paste(rep(var_controls, each = length(var_main)),
